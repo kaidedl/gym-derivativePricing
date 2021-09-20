@@ -3,7 +3,7 @@ domain featuring continuous state and action spaces. The task is to rebalance pe
 
 The feature space includes spots, forwards, correlations and implied vol surfaces. An observation is a matrix where each row corresponds to an asset and contains the correlations, the basket return, the time step, the spot, the forward, some strikes and the corresponding vols. The forwards and vols are computed for one time period.
 
-The action space is given by weights $x_i \in [0,1]$ for each asset such that $x_i / \sum x_j$ is invested in asset i. Hence an action is given by a real valued vector with size corresponding to the number of assets.
+The action space is given by weights 0<x_i<1 for asset i such that x_i / (x_1+..+x_n) is invested in asset i. Hence an action is given by a real valued vector with size n corresponding to the number of assets.
 
 # Installation
 
