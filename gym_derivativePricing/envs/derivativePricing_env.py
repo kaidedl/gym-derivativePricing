@@ -30,10 +30,10 @@ class DerivativePricingEnv(gym.Env):
     self.dt = self.period/self.nT
     self.sqrtDt = self.dt**0.5
 
-    self.nKs=3
+    self.nKs=1
     self.action_space = spaces.Box(low=0, high=1, shape=(self.nAssets,1), dtype=np.float16)
     self.observation_space = spaces.Box(low=-1, high=np.inf,
-      shape=(self.nAssets, self.nAssets + 4 + 2 * (1+2*self.nKs)), dtype=np.float16) # correl, basketReturn, time, spot, fwd, strikes, vols
+      shape=(self.nAssets, self.nAssets + 4 + 2 * (1+2*self.nKs)+1), dtype=np.float16) # correl, basketReturn, time, spot, fwd, strikes, vols
 
 
   def step(self, action):
@@ -80,11 +80,17 @@ class DerivativePricingEnv(gym.Env):
 
 
   def _next_observation(self):
-    obs=np.zeros((self.nAssets,self.nAssets + 4 + 2 * (1+2*self.nKs)))
+    # matrix of size (n, ) where is n is the number of assets
+    # row i corresponds to asset i
+    # columns 0,..,n-1: correlations to other assets
+    # columns n,..,n+3: basketReturn so far, number of remaining time step, spot of the asset, forward of asset over next period
+    # columns n+4,..,n+9: strike_low, strike_fwd, strike_up, vol_down, vol_fwd, vol_up for expiry in period
+    # columns n+10: vol for expiry in 2*period for strike = fwd
+    obs=np.zeros((self.nAssets,self.nAssets + 4 + 2 * (1+2*self.nKs)+1))
     for i in range(self.nAssets):
       obs[i,:self.nAssets]=self.obsCorrel[i,:]
       obs[i,self.nAssets]=self.basketReturn
-      obs[i,self.nAssets+1]=self.t
+      obs[i,self.nAssets+1]=self.nPeriods-self.t
       obs[i,self.nAssets+2]=self.spots[i]
       fwd = self.spots[i]*np.exp((self.r - self.q[i]) * self.period)
       obs[i,self.nAssets+3]=fwd
@@ -95,6 +101,9 @@ class DerivativePricingEnv(gym.Env):
           else heston_call(self.spots[i], Ks[j], self.period, self.V[i],self.Vbar[i],self.theta[i],self.alpha[i],self.rho[i],self.r,self.q[i])
         iv=implied_vol(price * np.exp(self.r * self.period), fwd, Ks[j], self.period, Ks[j]>=fwd)
         obs[i, self.nAssets + 4 + j + 2*self.nKs+1] = iv
+    price = heston_call(self.spots[i], fwd**2 / self.spots[i], 2*self.period, self.V[i], self.Vbar[i], self.theta[i], self.alpha[i], self.rho[i], self.r, self.q[i])
+    iv = implied_vol(price * np.exp(self.r * 2*self.period), fwd, fwd**2 / self.spots[i], 2*self.period)
+    obs[i, self.nAssets + 4 + len(Ks) + 2 * self.nKs + 1] = iv
     return obs
 
 
@@ -126,7 +135,7 @@ def heston_phi(z, tau, v, vbar, lamb, eta, rho):
 def heston_phi_call(k, tau, v, vbar, lambd, eta, rho, AL):
   integrand = lambda z: (np.exp(-z * k * 1j) * heston_phi(z - (AL + 1) * 1j, tau, v, vbar, lambd, eta, rho) / (
             AL ** 2 + AL - z ** 2 + 1j * (2 * AL + 1) * z)).real
-  return quad(integrand, 0, 500, limit=250)[0]
+  return quad(integrand, 0, 100, limit=50)[0]
 
 
 def heston_call(S, K, tau, v, vbar, lambd, eta, rho, r=0, divYield=0):
@@ -139,7 +148,7 @@ def heston_call(S, K, tau, v, vbar, lambd, eta, rho, r=0, divYield=0):
 def heston_phi_put(k, tau, v, vbar, lambd, eta, rho, AL):
   integrand = lambda z: (np.exp(-z * k * 1j) * heston_phi(z - (-AL + 1) * 1j, tau, v, vbar, lambd, eta, rho) / (
             AL ** 2 - AL - z ** 2 + 1j * (-2 * AL + 1) * z)).real
-  return quad(integrand, 0, 500, limit=250)[0]
+  return quad(integrand, 0, 100, limit=50)[0]
 
 
 def heston_put(S, K, tau, v, vbar, lambd, eta, rho, r=0, divYield=0):

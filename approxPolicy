@@ -1,37 +1,3 @@
-The derivativePricing environment is a single-agent
-domain featuring continuous state and action spaces in a stochastic model. The task is to rebalance periodically a portfolio of n stocks in order to maximize the value of a call option on this arithmetic basket. There is a (hedge) cost associated with each rebalancing.
-
-The feature space includes spots, forwards, correlations and implied vol surfaces. An observation is a matrix where each row corresponds to an asset and contains the correlations to the other assets, the basket return, the number of remaining time steps, the spot, the forward, three strikes around the forward and the corresponding vols. The forwards and vols are computed for one time period.
-
-The action space is given by weights 0<x_i<1 for each asset such that x_i / (x_1+..+x_n) is invested in asset i. Hence an action is given by a real valued vector with size n corresponding to the number of assets.
-
-The model is the Heston model.
-
-# Installation
-
-```bash
-cd gym-derivativePricing
-pip install -e .
-```
-
-# Example: Uniform random policy
-
-```bash
-def policy_random(obs):
-  alpha=np.ones(obs.shape[0])
-  return np.random.dirichlet(alpha)
-```
-
-# Example: Constant policy
-
-```bash
-def policy_const(obs):
-  return np.ones(obs.shape[0])/obs.shape[0]
-```
-
-# Example: Approximative policy ignoring cost
-
-```bash
 import gym
 
 import numpy as np
@@ -116,4 +82,3 @@ if __name__ == '__main__':
             obs, reward, done, info = env.step(action)
         rewards.append(reward)
     print(reward)
- ```
