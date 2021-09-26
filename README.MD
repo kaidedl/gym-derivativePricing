@@ -3,9 +3,9 @@ domain featuring continuous state and action spaces in a stochastic model. The t
 
 The feature space includes spots, forwards, correlations and implied vol surfaces. An observation is a matrix where each row corresponds to an asset and contains the correlations to the other assets, the basket return, the number of remaining time steps, the spot, the forward, three strikes around the forward and the corresponding vols. The forwards and vols are computed for one time period.
 
-The action space is given by weights 0<x_i<1 for each asset such that x_i / (x_1+..+x_n) is invested in asset i. Hence an action is given by a real valued vector with size n corresponding to the number of assets.
-
 The model is the Heston model.
+
+The action space is given by weights 0<x_i<1 for asset i such that x_i / (x_1+..+x_n) is invested in asset i. Hence an action is given by a real valued vector with size n corresponding to the number of assets.
 
 # Installation
 
@@ -54,7 +54,6 @@ def policy_approx(obs):
         voli=smile((1+(K/basketValue-1)/noRemainingPeriods)*obs[i,n+2])
         vols.append(float(voli))
         fwds.append(obs[i,n+3]/obs[i,n+2])
-    print(vols)
 
     def basketOptionValue(w, fwds, C, K, period):
         w=w/np.sum(w)
@@ -116,4 +115,4 @@ if __name__ == '__main__':
             obs, reward, done, info = env.step(action)
         rewards.append(reward)
     print(reward)
- ```
+```
